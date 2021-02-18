@@ -5,6 +5,7 @@ import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.os.Bundle;
@@ -14,6 +15,8 @@ import android.widget.TextView;
 
 import com.example.countriesapp.R;
 import com.example.countriesapp.model.CountryModel;
+import com.example.countriesapp.model.Photo;
+import com.example.countriesapp.model.Response;
 import com.example.countriesapp.viewmodel.ListViewmodel;
 
 import java.util.ArrayList;
@@ -24,7 +27,7 @@ import butterknife.ButterKnife;
 
 public class MainActivity extends AppCompatActivity {
     @BindView(R.id.recyclerView)
-    RecyclerView countriesList;
+    RecyclerView photosList;
     @BindView(R.id.list_error)
     TextView error;
     @BindView(R.id.loading_view)
@@ -33,7 +36,8 @@ public class MainActivity extends AppCompatActivity {
     SwipeRefreshLayout refresh;
 
     private ListViewmodel viewmodel;
-    private CountryListAdapter adapter = new CountryListAdapter(new ArrayList<>());
+    private GalleryAdapter adapter = new GalleryAdapter(new ArrayList<>());
+    private static final int NUM_COLS = 2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,8 +47,8 @@ public class MainActivity extends AppCompatActivity {
         viewmodel = ViewModelProviders.of(this).get(ListViewmodel.class);
         viewmodel.referesh();
 
-        countriesList.setLayoutManager(new LinearLayoutManager(this));
-        countriesList.setAdapter(adapter);
+        photosList.setLayoutManager(new StaggeredGridLayoutManager(NUM_COLS, LinearLayoutManager.VERTICAL));
+        photosList.setAdapter(adapter);
 
         refresh.setOnRefreshListener(() -> {
             viewmodel.referesh();
@@ -55,16 +59,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void observeViewModel() {
-        viewmodel.countries.observe(this, countryModels -> {
-            if(countryModels != null)
-            {
-                countriesList.setVisibility(View.VISIBLE);
-                adapter.updateCountries(countryModels);
+        viewmodel.photos.observe(this, new Observer<Response>() {
+            @Override
+            public void onChanged(Response response) {
+                if(response!=null){
+                    photosList.setVisibility(View.VISIBLE);
+                    adapter.updatePhotos(response.getPhotos().getPhoto());
+                }
             }
-
         });
 
-        viewmodel.countryLoadError.observe(this, isError -> {
+
+        viewmodel.LoadError.observe(this, isError -> {
             if(isError != null)
                 error.setVisibility(isError? View.VISIBLE:View.GONE);
         });
@@ -76,7 +82,7 @@ public class MainActivity extends AppCompatActivity {
                     loading.setVisibility(isLoading? View.VISIBLE:View.GONE);
                 if(isLoading)
                 {
-                    countriesList.setVisibility(View.GONE);
+                    photosList.setVisibility(View.GONE);
                     error.setVisibility(View.GONE);
                 }
             }
